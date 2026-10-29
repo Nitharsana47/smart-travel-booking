@@ -2,6 +2,9 @@
 
 **Book flights and trains in one place, and bring your pet along.**
 
+**Live demo:** https://smart-travel-booking.onrender.com  
+<sub>Hosted on a free plan: the first visit after a quiet period can take up to a minute to wake the server. Test card: 4111 1111 1111 1111, any future expiry, any CVV.</sub>
+
 SkyVoyage is a full-stack travel booking platform where pets are first-class travellers. Small pets fly in-cabin in dedicated pet rows, trains have a pet coach that keeps each family and its pet in one cabin, every pet's vaccination is checked before confirmation, and each booking comes with a pet pass alongside the boarding pass.
 
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
