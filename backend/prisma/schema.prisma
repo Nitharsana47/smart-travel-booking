@@ -1,0 +1,161 @@
+// SkyVoyage relational schema (PostgreSQL).
+// Trip timetables are generated deterministically from the route + date, so
+// they aren't stored; everything a booking creates or changes is.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Mode {
+  flight
+  train
+}
+
+enum LegStatus {
+  CONFIRMED
+  WAITLIST
+  CANCELLED
+}
+
+enum PassengerType {
+  Adult
+  Child
+  Infant
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  phone         String
+  passwordHash  String
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  bookings      Booking[]
+  refreshTokens RefreshToken[]
+}
+
+/// One row per issued refresh token. Only a SHA-256 of the token is stored;
+/// tokens rotate on every refresh and are revoked on logout.
+/// A token reused within 30 s of its rotation is a race, not theft (see rotateRefresh).
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  rotatedAt DateTime? // set only when replaced by rotation; logout and theft revocations leave it empty
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Per trip + class counters. Booking transactions lock this row
+/// (SELECT ... FOR UPDATE) so waitlist numbers and Tatkal counts never race.
+model TripInventory {
+  tripId      String
+  cls         String
+  waitlistSeq Int    @default(0)
+  tatkalUsed  Int    @default(0)
+
+  @@id([tripId, cls])
+}
+
+model Booking {
+  id         String       @id @default(uuid())
+  pnr        String       @unique
+  userId     String
+  mode       Mode
+  fareType   String
+  quota      String
+  petSize    String?
+  coupon     String?
+  contact    Json
+  quote      Json
+  totalPaise Int
+  createdAt  DateTime     @default(now())
+  user       User         @relation(fields: [userId], references: [id])
+  legs       BookingLeg[]
+  passengers Passenger[]
+  pet        Pet?
+  payment    Payment?
+
+  @@index([userId, createdAt])
+}
+
+model BookingLeg {
+  id         String           @id @default(uuid())
+  bookingId  String
+  position   Int
+  tripId     String
+  cls        String
+  status     LegStatus
+  waitlistNo Int?
+  bin        Boolean          @default(false)
+  trip       Json // snapshot of the trip as sold (times, operator, fares)
+  booking    Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seats      SeatAssignment[]
+
+  @@index([tripId, cls, status])
+}
+
+model Passenger {
+  id        String        @id @default(uuid())
+  bookingId String
+  position  Int
+  type      PassengerType
+  name      String
+  age       Int
+  gender    String
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Pet {
+  id           String  @id @default(uuid())
+  bookingId    String  @unique
+  name         String
+  type         String
+  breed        String
+  weightKg     Float
+  vaccinatedOn String
+  size         String
+  booking      Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+/// The double-booking guard: a seat on a trip can be assigned at most once.
+/// Cancelling deletes the rows, which frees the seats.
+model SeatAssignment {
+  id       String     @id @default(uuid())
+  legId    String
+  tripId   String
+  seatId   String
+  position Int // which seated passenger sits here
+  leg      BookingLeg @relation(fields: [legId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, seatId])
+}
+
+/// Payments are idempotent: retrying with the same Idempotency-Key returns
+/// the original booking instead of charging twice.
+model Payment {
+  id             String   @id @default(uuid())
+  bookingId      String   @unique
+  idempotencyKey String   @unique
+  method         String
+  ref            String
+  amountPaise    Int
+  status         String   @default("CAPTURED")
+  createdAt      DateTime @default(now())
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}

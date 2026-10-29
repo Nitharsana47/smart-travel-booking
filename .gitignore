@@ -1,0 +1,18 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Secrets: never commit real environment files (.env.example is the template)
+.env
+.env.*
+!.env.example
+
+# Test output
+test-results/
+playwright-report/
+coverage/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db

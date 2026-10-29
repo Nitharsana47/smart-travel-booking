@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: #0b2239;
+  --color-ink-soft: #4a6380;
+  --color-brand: #0ea5e9;
+  --color-brand-deep: #0369a1;
+  --color-paw: #f59e0b;
+  --color-paw-soft: #fef3c7;
+
+  --shadow-soft: 0 12px 40px -16px rgb(3 105 161 / 0.28);
+  --shadow-float: 0 32px 80px -24px rgb(3 105 161 / 0.4);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-white font-sans text-ink antialiased;
+}
+
+::selection {
+  @apply bg-sky-200 text-ink;
+}
+
+/* Clouds drift slowly across the sky; each one sets its own --dur and --delay. */
+@keyframes drift {
+  from { transform: translateX(-35vw); }
+  to { transform: translateX(135vw); }
+}
+.cloud-drift {
+  animation: drift var(--dur, 120s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform;
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.float-y { animation: float-y 6s ease-in-out infinite; }
+
+.text-sky-gradient {
+  @apply bg-gradient-to-r from-sky-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent;
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .cloud-drift, .float-y { animation: none; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .print-break { break-inside: avoid; }
+}
