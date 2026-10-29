@@ -1,0 +1,32 @@
+# Render Blueprint: one web service that runs the API and serves the website.
+# In Render: New + → Blueprint → pick this repository.
+services:
+  - type: web
+    name: smart-travel-booking
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: >-
+      cd frontend && npm ci --include=dev && npm run build &&
+      cd ../backend && npm ci --include=dev && npx prisma generate && npm run build
+    # Apply database migrations, then start the server.
+    startCommand: cd backend && npx prisma migrate deploy && node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      # Paste your Neon connection string here when Render asks (kept secret, not in git).
+      - key: DATABASE_URL
+        sync: false
+      # Empty = seat holds kept in server memory (fine for one instance). Set a Redis URL to share them.
+      - key: REDIS_URL
+        value: ""
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # The account registered with this email becomes an admin.
+      - key: ADMIN_EMAIL
+        sync: false

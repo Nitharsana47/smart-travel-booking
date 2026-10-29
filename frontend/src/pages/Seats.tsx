@@ -321,11 +321,12 @@ function SeatGlyph({ tone, className }: { tone: SeatTone; className?: string }) 
   )
 }
 
-const seatTone = (seat: Seat, selected: boolean): SeatTone =>
-  seat.taken ? 'taken' : selected ? 'selected' : seat.tags.includes('pet') ? 'pet' : seat.tags.includes('exit') || seat.tags.includes('front') ? 'extra' : 'free'
+/** Pet rows are only highlighted when the traveller has an in-cabin pet; otherwise they are ordinary seats. */
+const seatTone = (seat: Seat, selected: boolean, showPet: boolean): SeatTone =>
+  seat.taken ? 'taken' : selected ? 'selected' : showPet && seat.tags.includes('pet') ? 'pet' : seat.tags.includes('exit') || seat.tags.includes('front') ? 'extra' : 'free'
 
-function FlightSeat({ seat, selected, big, onToggle, onHover }: { seat: Seat; selected: boolean; big: boolean } & Pick<MapProps, 'onToggle' | 'onHover'>) {
-  const tone = seatTone(seat, selected)
+function FlightSeat({ seat, selected, big, showPet, onToggle, onHover }: { seat: Seat; selected: boolean; big: boolean; showPet: boolean } & Pick<MapProps, 'onToggle' | 'onHover'>) {
+  const tone = seatTone(seat, selected, showPet)
   return (
     <motion.button
       type="button"
@@ -465,7 +466,7 @@ function FlightMap({ trip, cls, taken, selected, highlightPet, onToggle, onHover
                   {r.seats.map((s, i) => (
                     <div key={s.id} className="flex items-center">
                       {i === half && <span className="w-7 sm:w-9" />}
-                      <FlightSeat seat={s} selected={selected.includes(s.id)} big={big} onToggle={onToggle} onHover={onHover} />
+                      <FlightSeat seat={s} selected={selected.includes(s.id)} big={big} showPet={highlightPet} onToggle={onToggle} onHover={onHover} />
                     </div>
                   ))}
                   <span className={cn(rowNo, r.exit && 'text-emerald-600')}>{r.exit ? <DoorOpen size={13} className="mx-auto -scale-x-100" /> : r.row}</span>
